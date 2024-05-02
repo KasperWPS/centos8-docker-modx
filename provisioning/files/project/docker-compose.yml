@@ -1,0 +1,49 @@
+services:
+
+  database:
+    image: mysql
+    container_name: database
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - ./dbdata:/var/lib/mysql
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:1.25.5-alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - 8081:8081
+    volumes:
+      - ./www:/var/www/html
+      - ./nginx-conf:/etc/nginx/conf.d
+    depends_on:
+      - modx
+    networks:
+      - app-network
+
+  modx:
+    build: ./modx
+    container_name: modx
+    restart: unless-stopped
+    environment:
+      MODX_DB_HOST: database
+      MODX_DB_NAME: "${DB_NAME}"
+      MODX_DB_USER: "root"
+      MODX_DB_PASSWORD: "${DB_ROOT_PASSWORD}"
+    volumes:
+      - ./www:/var/www/html
+    networks:
+      - app-network
+    depends_on:
+      - database
+
+networks:
+  app-network:
+    driver: bridge
+
